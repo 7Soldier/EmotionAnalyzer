@@ -15,7 +15,7 @@
 # Импортируем необходимые библиотеки
 import os
 import sounddevice as sd
-import threading
+import multiprocessing
 import scipy.io.wavfile as wav
 import torch
 from aniemore.recognizers.multimodal import MultiModalRecognizer
@@ -69,9 +69,14 @@ class SpeechEmotionDetector:
 
     # Основной метод для запуска детектора
     def main(self):
-        record_thread = threading.Thread(target=self.record_audio)  # Создание потока для записи аудио
-        analyze_thread = threading.Thread(target=self.analyze_emotion)  # Создание потока для анализа эмоций
-        record_thread.start()  # Запуск потока для записи аудио
-        analyze_thread.start()  # Запуск потока для анализа эмоций
-        record_thread.join()  # Ожидание завершения потока записи
-        analyze_thread.join()  # Ожидание завершения потока анализа
+        # Создание процессов для записи аудио и анализа эмоций
+        record_process = multiprocessing.Process(target=self.record_audio)
+        analyze_process = multiprocessing.Process(target=self.analyze_emotion)
+
+        # Запуск процессов
+        record_process.start()
+        analyze_process.start()
+
+        # Ожидание завершения процессов
+        record_process.join()
+        analyze_process.join()
