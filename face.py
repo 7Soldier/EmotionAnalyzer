@@ -20,15 +20,15 @@ from data import write_face_emotions
 
 # Определяем класс FaceEmotionDetector
 class FaceEmotionDetector:
-    # Инициализируем класс с очередью сообщений в качестве аргумента
-    def __init__(self, message_queue):
+    # Инициализируем класс с событием выхода в качестве аргумента
+    def __init__(self, face_exit_event):
         # Загружаем каскад Хаара для обнаружения лиц
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
         self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Открываем видеопоток с веб-камеры
 
         self.emotion_detector = FER(mtcnn=True)  # Инициализируем детектор эмоций
         self.emotions_counter = Counter()  # Инициализируем счетчик для подсчета эмоций
-        self.message_queue = message_queue  # Сохраняем очередь сообщений
+        self.face_exit_event = face_exit_event  # Сохраняем событие выхода
 
         # Если видеопоток не открыт, вызываем исключение
         if not self.video.isOpened():
@@ -54,15 +54,12 @@ class FaceEmotionDetector:
     def main(self):
         # Пока видеопоток открыт
         while self.video.isOpened():
-            # Если в очереди сообщений есть сообщения
-            if not self.message_queue.empty():
-                message = self.message_queue.get()  # Получаем сообщение из очереди
-                # Если сообщение - 'face_exit'
-                if message == 'face_exit':
-                    write_face_emotions(self.emotions_counter)  # Записываем эмоции в файл
-                    self.video.release()  # Освобождаем видеопоток
-                    cv2.destroyAllWindows()  # Закрываем все окна
-                    break  # Прерываем цикл
+            # Если событие выхода установлено
+            if self.face_exit_event.is_set():
+                write_face_emotions(self.emotions_counter)  # Записываем эмоции в файл
+                self.video.release()  # Освобождаем видеопоток
+                cv2.destroyAllWindows()  # Закрываем все окна
+                break  # Прерываем цикл
 
             ret, frame = self.video.read()  # Читаем кадр из видеопотока
             faces = self.detect_faces(frame)  # Обнаруживаем лица на кадре

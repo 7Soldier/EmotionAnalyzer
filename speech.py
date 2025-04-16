@@ -14,7 +14,6 @@
 
 # Импортируем необходимые библиотеки
 import os
-import queue
 import sounddevice as sd
 import threading
 import scipy.io.wavfile as wav
@@ -27,8 +26,8 @@ from data import write_speech_emotions
 
 # Определение класса для обнаружения эмоций в речи
 class SpeechEmotionDetector:
-    # Инициализируем класс с очередью сообщений в качестве аргумента
-    def __init__(self, message_queue):
+    # Инициализируем класс с событиями выхода в качестве аргументов
+    def __init__(self, recording_exit_event, speech_exit_event):
         # Инициализация модели для распознавания эмоций
         self.model = HuggingFaceModel.MultiModal.WavLMBertFusion
         # Определение устройства для работы с моделью
@@ -37,8 +36,8 @@ class SpeechEmotionDetector:
         self.mr = MultiModalRecognizer(model=self.model, s2t_model=SmallSpeech2Text(), device=self.device)
 
         self.emotions_counter = Counter()  # Инициализация счетчика эмоций
-        self.wav_queue = queue.Queue()  # Инициализация очереди для wav-файлов
-        self.message_queue = message_queue  # Сохранение очереди сообщений
+        self.recording_exit_event = recording_exit_event  # Событие выхода для записи
+        self.speech_exit_event = speech_exit_event  # Событие выхода для анализа
 
         self.recording_path = './recording/'  # Путь для сохранения записей
         self.recording_duration = 10  # Длительность записи
@@ -48,36 +47,25 @@ class SpeechEmotionDetector:
     # Метод для записи аудио
     def record_audio(self):
         counter = 0  # Счетчик для именования файлов
-        while True:  # Бесконечный цикл
-            if not self.message_queue.empty():  # Если в очереди сообщений есть сообщения
-                message = self.message_queue.get()  # Получение сообщения из очереди
-                if message == 'recording_exit':  # Если сообщение о завершении записи
-                    break  # Прерывание цикла
-
+        while not self.recording_exit_event.is_set():  # Пока событие выхода не установлено
             # Запись аудио
             recording = sd.rec(int(self.recording_duration * self.fs), samplerate=self.fs, channels=self.channels)
             sd.wait()  # Ожидание окончания записи
             filename = os.path.join(self.recording_path, f'output_{counter}.wav')  # Создание имени файла
             wav.write(filename, self.fs, recording)  # Запись аудио в файл
-            self.wav_queue.put(filename)  # Добавление имени файла в очередь
             counter += 1  # Увеличение счетчика
 
     # Метод для анализа эмоций
     def analyze_emotion(self):
-        while True:  # Бесконечный цикл
-            if not self.message_queue.empty():  # Если в очереди сообщений есть сообщения
-                message = self.message_queue.get()  # Получение сообщения из очереди
-                if message == 'speech_exit':  # Если сообщение о завершении анализа
-                    write_speech_emotions(self.emotions_counter)  # Запись эмоций в файл
-                    files = [f for f in os.listdir(self.recording_path)]  # Получение списка файлов в директории
-                    for file in files:  # Для каждого файла
-                        os.remove(os.path.join(self.recording_path, file))  # Удаление файла
-                    break  # Прерывание цикла
+        while not self.speech_exit_event.is_set():  # Пока событие выхода не установлено
+            files = [f for f in os.listdir(self.recording_path)]  # Получение списка файлов в директории
+            for file in files:  # Для каждого файла
+                filepath = os.path.join(self.recording_path, file)
+                emotion = self.mr.recognize(filepath, return_single_label=True)  # Распознавание эмоции в аудио
+                self.emotions_counter[emotion] += 1  # Увеличение счетчика для полученной эмоции
+                os.remove(filepath)  # Удаление файла после анализа
 
-            filename = self.wav_queue.get()  # Получение имени файла из очереди
-            emotion = self.mr.recognize(filename, return_single_label=True)  # Распознавание эмоции в аудио
-            self.emotions_counter[emotion] += 1  # Увеличение счетчика для полученной эмоции
-            os.remove(filename)  # Удаление файла после анализа
+        write_speech_emotions(self.emotions_counter)  # Запись эмоций в файл
 
     # Основной метод для запуска детектора
     def main(self):
@@ -85,3 +73,5 @@ class SpeechEmotionDetector:
         analyze_thread = threading.Thread(target=self.analyze_emotion)  # Создание потока для анализа эмоций
         record_thread.start()  # Запуск потока для записи аудио
         analyze_thread.start()  # Запуск потока для анализа эмоций
+        record_thread.join()  # Ожидание завершения потока записи
+        analyze_thread.join()  # Ожидание завершения потока анализа

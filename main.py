@@ -18,18 +18,29 @@ from speech import SpeechEmotionDetector
 from face import FaceEmotionDetector
 
 # Функция для обработки выхода из программы
-def exit_handler(message_queue):
+def exit_handler(face_exit_event, recording_exit_event, speech_exit_event):
     keyboard.wait('q')  # Ожидание нажатия клавиши 'q'
-    message_queue.put('face_exit')  # Добавление сообщения в очередь
-    message_queue.put('recording_exit')  # Добавление сообщения в очередь
-    message_queue.put('speech_exit')  # Добавление сообщения в очередь
+    face_exit_event.set()  # Установка события для выхода face
+    recording_exit_event.set()  # Установка события для выхода recording
+    speech_exit_event.set()  # Установка события для выхода speech
 
 # Главная функция
 def main():
+    # Создание событий для сигнализации
+    face_exit_event = multiprocessing.Event()
+    recording_exit_event = multiprocessing.Event()
+    speech_exit_event = multiprocessing.Event()
+
     # Создание процессов для обнаружения эмоций
-    voice_process = multiprocessing.Process(target=SpeechEmotionDetector(message_queue).main)
-    face_process = multiprocessing.Process(target=FaceEmotionDetector(message_queue).main)
-    interrupt_process = multiprocessing.Process(target=exit_handler, args=(message_queue,))
+    voice_process = multiprocessing.Process(
+        target=SpeechEmotionDetector(recording_exit_event, speech_exit_event).main
+    )
+    face_process = multiprocessing.Process(
+        target=FaceEmotionDetector(face_exit_event).main
+    )
+    interrupt_process = multiprocessing.Process(
+        target=exit_handler, args=(face_exit_event, recording_exit_event, speech_exit_event)
+    )
 
     # Запуск процессов
     voice_process.start()
@@ -43,5 +54,4 @@ def main():
 
 # Если этот файл является главным, то запускается главная функция
 if __name__ == "__main__":
-    message_queue = multiprocessing.Queue()  # Создание очереди сообщений
     main()  # Запуск главной функции
