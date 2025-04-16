@@ -45,11 +45,10 @@ class FaceEmotionDetector:
 
     # Метод для обнаружения эмоций на лицах
     def detect_emotion(self, frame, faces):
-        for (x, y, w, h) in faces:
-            # Обнаруживаем эмоцию на лице
-            emotion = self.emotion_detector.top_emotion(frame)[0]
-            # Увеличиваем счетчик для этой эмоции
-            self.emotions_counter[emotion] += 1
+        # Обнаруживаем эмоцию на лице
+        emotion = self.emotion_detector.top_emotion(frame)[0]
+        # Увеличиваем счетчик для этой эмоции
+        self.emotions_counter[emotion] += 1
 
     # Основной метод для запуска детектора
     def main(self):
