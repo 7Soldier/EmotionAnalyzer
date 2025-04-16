@@ -162,3 +162,4 @@ cython_debug/
 
 # Results of program execution
 emotions_*.xlsx
+recording/*
