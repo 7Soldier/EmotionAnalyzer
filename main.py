@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Импортируем необходимые библиотеки
 import keyboard
-import threading
-import queue
+import multiprocessing
 from speech import SpeechEmotionDetector
 from face import FaceEmotionDetector
 
 # Функция для обработки выхода из программы
-def exit_handler():
+def exit_handler(message_queue):
     keyboard.wait('q')  # Ожидание нажатия клавиши 'q'
     message_queue.put('face_exit')  # Добавление сообщения в очередь
     message_queue.put('recording_exit')  # Добавление сообщения в очередь
@@ -28,24 +26,22 @@ def exit_handler():
 
 # Главная функция
 def main():
-    # Создание потока для обнаружения эмоций в голосе
-    voice_thread = threading.Thread(target=SpeechEmotionDetector(message_queue).main)
-    # Создание потока для обнаружения эмоций на лице
-    face_thread = threading.Thread(target=FaceEmotionDetector(message_queue).main)
-    # Создание потока для обработки выхода из программы
-    interrupt_thread = threading.Thread(target=exit_handler)
+    # Создание процессов для обнаружения эмоций
+    voice_process = multiprocessing.Process(target=SpeechEmotionDetector(message_queue).main)
+    face_process = multiprocessing.Process(target=FaceEmotionDetector(message_queue).main)
+    interrupt_process = multiprocessing.Process(target=exit_handler, args=(message_queue,))
 
-    # Запуск потоков
-    voice_thread.start()
-    face_thread.start()
-    interrupt_thread.start()
+    # Запуск процессов
+    voice_process.start()
+    face_process.start()
+    interrupt_process.start()
 
-    # Ожидание завершения потоков
-    voice_thread.join()
-    face_thread.join()
-    interrupt_thread.join()
+    # Ожидание завершения процессов
+    voice_process.join()
+    face_process.join()
+    interrupt_process.join()
 
 # Если этот файл является главным, то запускается главная функция
 if __name__ == "__main__":
-    message_queue = queue.Queue()  # Создание очереди сообщений
+    message_queue = multiprocessing.Queue()  # Создание очереди сообщений
     main()  # Запуск главной функции
