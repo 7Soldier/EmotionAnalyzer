@@ -23,7 +23,7 @@ class FaceEmotionDetector:
     # Инициализируем класс с очередью сообщений в качестве аргумента
     def __init__(self, message_queue):
         # Загружаем каскад Хаара для обнаружения лиц
-        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+        self.face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
         self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Открываем видеопоток с веб-камеры
 
         self.emotion_detector = FER(mtcnn=True)  # Инициализируем детектор эмоций
