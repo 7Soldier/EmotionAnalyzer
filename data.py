@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Импортируем необходимые библиотеки
-import pandas as pd
+# Импортируем библиотеки для работы с данными и сохранения результатов
+import pandas as pd  # Импорт библиотеки pandas для работы с табличными данными
 
-# Функция для записи эмоций лица в файл Excel
-def write_face_emotions(emotions_counter):
-    # Создаем DataFrame из словаря счетчика эмоций
-    df = pd.DataFrame(list(emotions_counter.items()), columns=['Emotion', 'Count'])
-    # Сохраняем DataFrame в файл Excel
+# Функция для записи результатов распознавания эмоций лица в Excel файл
+def write_face_emotions(emotion_counter):
+    # Преобразуем счетчик эмоций в список кортежей и создаем DataFrame
+    df = pd.DataFrame(list(emotion_counter.items()), columns=['Emotion', 'Count'])
+    # Сохраняем DataFrame в Excel файл без индекса, в лист "face"
     df.to_excel('emotions_face.xlsx', index=False, sheet_name='face')
 
-# Функция для записи эмоций речи в файл Excel
-def write_speech_emotions(emotions_counter):
-    # Создаем DataFrame из словаря счетчика эмоций
-    df = pd.DataFrame(list(emotions_counter.items()), columns=['Emotion', 'Count'])
-    # Сохраняем DataFrame в файл Excel
+# Функция для записи результатов распознавания эмоций речи в Excel файл
+def write_speech_emotions(emotion_counter):
+    # Преобразуем счетчик эмоций в список кортежей и создаем DataFrame
+    df = pd.DataFrame(list(emotion_counter.items()), columns=['Emotion', 'Count'])
+    # Сохраняем DataFrame в Excel файл без индекса, в лист "speech"
     df.to_excel('emotions_speech.xlsx', index=False, sheet_name='speech')
