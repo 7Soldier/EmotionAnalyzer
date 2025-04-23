@@ -88,6 +88,7 @@ class SpeechEmotionDetector:
             audio_filename = self.audio_file_queue.get()
             # Распознаем эмоцию для аудиофайла; возвращается единственная метка эмоции
             recognized_emotion = self.multi_modal_recognizer.recognize(audio_filename, return_single_label=True)
+            print(f"\nAudio emotion recognition: {recognized_emotion}\n")  # Вывод распознанной эмоции в консоль
             self.emotion_counts[recognized_emotion] += 1  # Увеличиваем счётчик для полученной эмоции
             os.remove(audio_filename)  # Удаляем обработанный файл аудио для экономии места
 
